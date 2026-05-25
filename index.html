@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jiji's Meds</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #F7F7F7; font-family: 'DM Sans', sans-serif; color: #1A1A1A; min-height: 100vh; }
+    button { cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    input { font-family: 'DM Sans', sans-serif; }
+    input:focus { outline: none; }
+    .serif { font-family: 'DM Serif Display', Georgia, serif; font-weight: normal; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeImg { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+    .fade-in { animation: fadeIn 0.3s ease forwards; }
+    .shake { animation: shake 0.3s ease; }
+    .hidden { display: none !important; }
+
+    /* AUTH */
+    #auth-screen {
+      min-height: 100vh; display: flex; align-items: center;
+      justify-content: center; padding: 24px;
+    }
+    .auth-inner { width: 100%; max-width: 360px; text-align: center; }
+    .auth-inner .cat-emoji { font-size: 48px; margin-bottom: 8px; }
+    .auth-inner h1 { font-size: 28px; color: #1A1A1A; margin-bottom: 4px; }
+    .auth-inner .subtitle { color: #888; font-size: 14px; font-weight: 300; margin-bottom: 40px; }
+    .user-btns { display: flex; gap: 12px; }
+    .user-btn {
+      flex: 1; padding: 18px 12px;
+      background: #fff; border: 1.5px solid #E0E0E0;
+      border-radius: 16px; font-size: 16px; color: #1A1A1A;
+      font-family: 'DM Serif Display', Georgia, serif;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .user-btn:hover { border-color: #1A1A1A; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .passcode-label { color: #444; font-size: 15px; margin-bottom: 6px; }
+    .passcode-sublabel { color: #888; font-size: 13px; margin-bottom: 20px; }
+    .passcode-input {
+      width: 100%; padding: 16px; text-align: center;
+      font-size: 24px; letter-spacing: 8px;
+      border: 1.5px solid #E0E0E0; border-radius: 14px;
+      background: #fff; color: #1A1A1A; margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .passcode-input.error { border-color: #E05252; }
+    .error-msg { color: #E05252; font-size: 13px; margin-bottom: 12px; }
+    .btn-primary {
+      width: 100%; padding: 15px; background: #1A1A1A; color: #fff;
+      border: none; border-radius: 14px; font-size: 15px; font-weight: 500;
+    }
+    .btn-ghost {
+      width: 100%; padding: 12px; background: transparent;
+      color: #888; border: none; font-size: 13px; margin-top: 8px;
+    }
+
+    /* MAIN APP */
+    #app { display: none; }
+    .header {
+      background: #fff; border-bottom: 1px solid #EBEBEB;
+      padding: 20px 24px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header-cat { font-size: 28px; }
+    .header-title { font-size: 20px; color: #1A1A1A; }
+    .header-sync { font-size: 11px; color: #AAA; font-weight: 300; margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .refresh-btn { background: none; border: none; color: #AAA; font-size: 18px; padding: 4px; }
+    .user-pill {
+      background: #F0F0F0; border-radius: 20px;
+      padding: 5px 12px; font-size: 12px; color: #555; font-weight: 500;
+      display: flex; align-items: center; gap: 6px; border: none;
+    }
+    .user-dot { width: 7px; height: 7px; border-radius: 50%; background: #1A1A1A; }
+
+    /* TABS */
+    .tabs { display: flex; padding: 16px 20px 0; gap: 8px; }
+    .tab-btn {
+      flex: 1; padding: 10px 0;
+      border-radius: 10px; font-size: 13px; font-weight: 500;
+      transition: all 0.15s; border: 1.5px solid #E8E8E8;
+      background: #fff; color: #888;
+    }
+    .tab-btn.active { background: #1A1A1A; color: #fff; border-color: transparent; }
+
+    /* VIEWS */
+    .view { padding: 20px; animation: fadeIn 0.25s ease; }
+    .view.hidden { display: none; }
+
+    /* TODAY */
+    .date-label { font-size: 13px; color: #AAA; font-weight: 300; margin-bottom: 16px; }
+    .status-card {
+      background: #fff; border: 1.5px solid #F5F5F5;
+      border-radius: 20px; padding: 32px 24px; text-align: center; margin-bottom: 16px;
+      transition: border-color 0.3s;
+    }
+    .status-card.given { border-color: #D4EDDA; }
+    .status-icon {
+      width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 16px;
+      background: #F5F5F5; display: flex; align-items: center; justify-content: center;
+      font-size: 32px; transition: all 0.3s;
+    }
+    .status-icon.given { background: #D4EDDA; }
+    .status-title { font-size: 20px; margin-bottom: 8px; transition: color 0.3s; }
+    .status-title.given { color: #2D7A45; }
+    .status-sub { font-size: 13px; color: #AAA; }
+    .status-sub strong { color: #444; }
+    .jiji-photo {
+      width: 100%; border-radius: 12px; object-fit: cover;
+      max-height: 300px; display: block; margin-top: 20px;
+      animation: fadeImg 0.5s ease;
+    }
+    .btn-give {
+      width: 100%; padding: 17px; background: #2D7A45; color: #fff;
+      border: none; border-radius: 14px; font-size: 15px; font-weight: 500;
+      transition: opacity 0.2s; margin-bottom: 0;
+    }
+    .btn-give:disabled { opacity: 0.6; }
+    .btn-undo {
+      width: 100%; padding: 14px; background: transparent;
+      color: #CCC; border: 1.5px solid #EBEBEB;
+      border-radius: 14px; font-size: 13px; transition: all 0.2s;
+    }
+    .btn-undo.confirming { color: #E05252; border-color: #E05252; }
+    .btn-signout {
+      display: block; margin: 28px auto 0;
+      background: none; border: none; color: #CCC; font-size: 12px;
+    }
+
+    /* CALENDAR */
+    .cal-nav {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+    }
+    .cal-nav-btn {
+      background: #fff; border: 1.5px solid #E8E8E8; border-radius: 8px;
+      width: 36px; height: 36px; font-size: 16px; color: #555;
+    }
+    .cal-month-title { font-size: 17px; color: #1A1A1A; }
+    .cal-day-labels {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px;
+    }
+    .cal-day-label { text-align: center; font-size: 11px; color: #BBB; font-weight: 500; padding: 4px 0; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-cell {
+      aspect-ratio: 1; border-radius: 8px; background: #F5F5F5;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; cursor: default; border: none;
+      transition: opacity 0.15s, transform 0.15s; position: relative;
+    }
+    .cal-cell.clickable { cursor: pointer; }
+    .cal-cell.clickable:hover { opacity: 0.75; transform: scale(0.96); }
+    .cal-cell.given { background: #D4EDDA; }
+    .cal-cell.missed { background: #FDEAEA; }
+    .cal-cell.no-record { background: #E0E0E0; }
+    .cal-cell.future { background: #FAFAFA; }
+    .cal-cell.today { border: 2px solid #1A1A1A; }
+    .cal-num { font-size: 13px; color: #BBB; }
+    .cal-cell.given .cal-num { color: #2D7A45; }
+    .cal-cell.missed .cal-num { color: #C0392B; }
+    .cal-cell.no-record .cal-num { color: #888; }
+    .cal-cell.today .cal-num { font-weight: 600; }
+    .cal-tick { font-size: 8px; color: #2D7A45; font-weight: 600; }
+    .cal-cross { font-size: 8px; color: #C0392B; font-weight: 600; }
+    .cal-hint { text-align: center; font-size: 11px; color: #CCC; margin-top: 14px; margin-bottom: 4px; }
+    .cal-legend { display: flex; gap: 14px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 14px; height: 14px; border-radius: 4px; border: 1px solid #E8E8E8; }
+    .legend-label { font-size: 12px; color: #888; }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.45);
+      display: flex; align-items: flex-end; justify-content: center;
+      animation: fadeOverlay 0.2s ease;
+    }
+    .modal-sheet {
+      width: 100%; max-width: 480px;
+      background: #fff; border-radius: 20px 20px 0 0;
+      padding: 28px 24px 40px;
+      animation: slideUp 0.25s ease;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .modal-title { font-size: 18px; color: #1A1A1A; }
+    .modal-date { font-size: 13px; color: #AAA; margin-top: 4px; }
+    .modal-last-updated { font-size: 12px; color: #BBB; margin-bottom: 20px; }
+    .modal-close {
+      background: #F0F0F0; border: none; border-radius: 50%;
+      width: 32px; height: 32px; font-size: 16px; color: #888; line-height: 32px;
+    }
+    .modal-prompt { font-size: 14px; color: #555; margin-bottom: 14px; }
+    .status-option {
+      width: 100%; padding: 14px 18px; text-align: left;
+      border-radius: 12px; font-size: 15px; font-weight: 500;
+      border: 1.5px solid #E8E8E8; background: #F7F7F7; color: #333;
+      margin-bottom: 10px; transition: all 0.15s;
+    }
+    .status-option .current-tag { float: right; font-size: 12px; opacity: 0.6; }
+    .status-option.opt-given { background: #D4EDDA; color: #2D7A45; border-color: #B2DFCA; }
+    .status-option.opt-missed { background: #FDEAEA; color: #C0392B; border-color: #F5C0C0; }
+    .status-option.opt-none { background: #E8E8E8; color: #555; border-color: #D0D0D0; }
+    .modal-code-label { font-size: 14px; color: #555; margin-bottom: 6px; }
+    .modal-code-sub { font-size: 13px; color: #AAA; margin-bottom: 20px; }
+    .modal-code-input {
+      width: 100%; padding: 15px; text-align: center;
+      font-size: 22px; letter-spacing: 8px;
+      border: 1.5px solid #E0E0E0; border-radius: 12px;
+      background: #F9F9F9; color: #1A1A1A; margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+    .modal-code-input.error { border-color: #E05252; }
+  </style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-inner">
+    <div class="cat-emoji">🐱</div>
+    <h1 class="serif">Jiji's Meds</h1>
+    <p class="subtitle">Daily medication tracker</p>
+
+    <!-- User select -->
+    <div id="step-user" class="fade-in">
+      <p style="color:#444;font-size:15px;margin-bottom:16px;">Who are you?</p>
+      <div class="user-btns">
+        <button class="user-btn serif" onclick="selectUser('Yuri')">Yuri</button>
+        <button class="user-btn serif" onclick="selectUser('Cecilia')">Cecilia</button>
+      </div>
+    </div>
+
+    <!-- Passcode -->
+    <div id="step-password" class="hidden fade-in">
+      <p class="passcode-label">Hi <span id="greeting-name"></span> 👋</p>
+      <p class="passcode-sublabel">Enter the passcode</p>
+      <input type="password" inputmode="numeric" maxlength="4" id="passcode-input"
+        class="passcode-input" placeholder="••••"
+        oninput="if(this.value.length===4) submitPasscode()"
+        onkeydown="if(event.key==='Enter') submitPasscode()" />
+      <p id="passcode-error" class="error-msg hidden">Wrong passcode. Try again.</p>
+      <button class="btn-primary" onclick="submitPasscode()">Continue</button>
+      <button class="btn-ghost" onclick="backToUsers()">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <span class="header-cat">🐱</span>
+      <div>
+        <div class="serif header-title">Jiji's Meds</div>
+        <div class="header-sync" id="sync-label">Syncing…</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="refresh-btn" onclick="loadData()">↻</button>
+      <button class="user-pill" onclick="signOut()">
+        <span class="user-dot"></span>
+        <span id="header-username"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-today" onclick="switchTab('today')">Today</button>
+    <button class="tab-btn" id="tab-calendar" onclick="switchTab('calendar')">Calendar</button>
+  </div>
+
+  <!-- TODAY VIEW -->
+  <div class="view" id="view-today">
+    <p class="date-label" id="today-date-label"></p>
+    <div class="status-card" id="status-card">
+      <div class="status-icon" id="status-icon">💊</div>
+      <h2 class="serif status-title" id="status-title">Not yet today</h2>
+      <p class="status-sub" id="status-sub">Jiji hasn't had her medication today</p>
+      <img id="jiji-photo" class="jiji-photo hidden" src="" alt="Jiji" />
+    </div>
+    <button class="btn-give" id="btn-give" onclick="giveMed()">Mark as given</button>
+    <button class="btn-undo hidden" id="btn-undo" onclick="undoMed()">Undo</button>
+    <button class="btn-signout" onclick="signOut()">Sign out</button>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div class="view hidden" id="view-calendar">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+      <h2 class="serif cal-month-title" id="cal-month-title"></h2>
+      <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="cal-day-labels">
+      <div class="cal-day-label">Sun</div>
+      <div class="cal-day-label">Mon</div>
+      <div class="cal-day-label">Tue</div>
+      <div class="cal-day-label">Wed</div>
+      <div class="cal-day-label">Thu</div>
+      <div class="cal-day-label">Fri</div>
+      <div class="cal-day-label">Sat</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <p class="cal-hint">Tap any past or present day to edit</p>
+    <div class="cal-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#D4EDDA"></div><span class="legend-label">Given</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FDEAEA"></div><span class="legend-label">Missed</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E0E0E0"></div><span class="legend-label">No record</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FAFAFA"></div><span class="legend-label">Upcoming</span></div>
+    </div>
+    <button class="btn-signout" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- EDIT DAY MODAL -->
+<div class="modal-overlay hidden" id="modal" onclick="if(event.target===this) closeModal()">
+  <div class="modal-sheet">
+    <!-- Step: status -->
+    <div id="modal-step-status">
+      <div class="modal-header">
+        <div>
+          <div class="serif modal-title">Edit day</div>
+          <div class="modal-date" id="modal-date-label"></div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <p class="modal-last-updated" id="modal-last-updated"></p>
+      <p class="modal-prompt">Set status for this day:</p>
+      <button class="status-option" id="opt-given" onclick="selectStatus('given')">✓&nbsp;&nbsp;Given</button>
+      <button class="status-option" id="opt-missed" onclick="selectStatus('missed')">✗&nbsp;&nbsp;Missed</button>
+      <button class="status-option" id="opt-none" onclick="selectStatus('none')">—&nbsp;&nbsp;No record</button>
+    </div>
+    <!-- Step: confirm code -->
+    <div id="modal-step-code" class="hidden">
+      <div class="modal-header" style="margin-bottom:24px;">
+        <div class="serif modal-title">Confirm with passcode</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <p class="modal-code-label">Marking <strong id="modal-confirm-date"></strong> as <strong id="modal-confirm-status"></strong></p>
+      <p class="modal-code-sub">Enter the passcode to confirm.</p>
+      <input type="password" inputmode="numeric" maxlength="4" id="modal-code-input"
+        class="modal-code-input" placeholder="••••"
+        oninput="if(this.value.length===4) submitModalCode()"
+        onkeydown="if(event.key==='Enter') submitModalCode()" />
+      <p id="modal-code-error" class="error-msg hidden">Wrong passcode. Try again.</p>
+      <button class="btn-primary" onclick="submitModalCode()">Confirm</button>
+      <button class="btn-ghost" onclick="backToStatus()">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCmkpab2Mu4i0sL0L-0YuZp8k6SLOBTSc",
+    authDomain: "jiji-medication.firebaseapp.com",
+    databaseURL: "https://jiji-medication-default-rtdb.firebaseio.com",
+    projectId: "jiji-medication",
+    storageBucket: "jiji-medication.firebasestorage.app",
+    messagingSenderId: "248265541772",
+    appId: "1:248265541772:web:7bedf94cd5d66a2e9213a9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  window._db = db;
+  window._dbRef = ref;
+  window._dbSet = set;
+  window._dbGet = get;
+  window._dbRemove = remove;
+  window._firebaseReady = true;
+  window.dispatchEvent(new Event("firebase-ready"));
+</script>
+
+<script>
+  const PASSWORD = "2326";
+  const USERS = ["Yuri", "Cecilia"];
+  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const JIJI_PHOTOS = [
+    "https://raw.githubusercontent.com/ceciliaparedesnz/jiji-medication/main/DSC_0137.JPG",
+    "https://raw.githubusercontent.com/ceciliaparedesnz/jiji-medication/main/IMG_0118.JPG",
+    "https://raw.githubusercontent.com/ceciliaparedesnz/jiji-medication/main/IMG_2192.jpg",
+    "https://raw.githubusercontent.com/ceciliaparedesnz/jiji-medication/main/IMG_2417.JPG",
+    "https://raw.githubusercontent.com/ceciliaparedesnz/jiji-medication/main/IMG_4420.JPG",
+    "https://raw.githubusercontent.com/ceciliaparedesnz/jiji-medication/main/IMG_6400.JPG",
+    "https://raw.githubusercontent.com/ceciliaparedesnz/jiji-medication/main/IMG_7528.JPG",
+    "https://raw.githubusercontent.com/ceciliaparedesnz/jiji-medication/main/IMG_8402.JPG",
+    "https://raw.githubusercontent.com/ceciliaparedesnz/jiji-medication/main/IMG_9659.JPG",
+  ];
+
+  // ── STATE ──
+  let authedUser = localStorage.getItem("jiji-auth-user") || null;
+  let todayEntry = null;
+  let calendarData = {};
+  let calMonth = new Date().getMonth();
+  let calYear = new Date().getFullYear();
+  let undoConfirming = false;
+  let undoTimer = null;
+  let editingDate = null;
+  let pendingStatus = null;
+  let syncInterval = null;
+
+  function getTodayKey() {
+    return new Date().toISOString().split("T")[0];
+  }
+
+  function formatTime(isoString) {
+    return new Date(isoString).toLocaleTimeString("en-NZ", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function getRandomPhoto() {
+    return JIJI_PHOTOS[Math.floor(Math.random() * JIJI_PHOTOS.length)];
+  }
+
+  // ── FIREBASE HELPERS ──
+  async function dbSet(path, value) {
+    const r = window._dbRef(window._db, path);
+    await window._dbSet(r, value);
+  }
+
+  async function dbGet(path) {
+    const r = window._dbRef(window._db, path);
+    const snap = await window._dbGet(r);
+    return snap.exists() ? snap.val() : null;
+  }
+
+  async function dbRemove(path) {
+    const r = window._dbRef(window._db, path);
+    await window._dbRemove(r);
+  }
+
+  // ── AUTH ──
+  let selectedUser = null;
+
+  window.selectUser = function(user) {
+    selectedUser = user;
+    document.getElementById("greeting-name").textContent = user;
+    document.getElementById("step-user").classList.add("hidden");
+    document.getElementById("step-password").classList.remove("hidden");
+    document.getElementById("step-password").classList.add("fade-in");
+    setTimeout(() => document.getElementById("passcode-input").focus(), 100);
+  };
+
+  window.backToUsers = function() {
+    document.getElementById("step-password").classList.add("hidden");
+    document.getElementById("step-user").classList.remove("hidden");
+    document.getElementById("step-user").classList.add("fade-in");
+    document.getElementById("passcode-input").value = "";
+    document.getElementById("passcode-error").classList.add("hidden");
+  };
+
+  window.submitPasscode = function() {
+    const val = document.getElementById("passcode-input").value;
+    if (val === PASSWORD) {
+      localStorage.setItem("jiji-auth-user", selectedUser);
+      authedUser = selectedUser;
+      showApp();
+    } else {
+      const inp = document.getElementById("passcode-input");
+      inp.classList.add("error", "shake");
+      document.getElementById("passcode-error").classList.remove("hidden");
+      inp.value = "";
+      setTimeout(() => { inp.classList.remove("shake"); }, 400);
+      setTimeout(() => {
+        inp.classList.remove("error");
+        document.getElementById("passcode-error").classList.add("hidden");
+      }, 2000);
+    }
+  };
+
+  window.signOut = function() {
+    localStorage.removeItem("jiji-auth-user");
+    authedUser = null;
+    clearInterval(syncInterval);
+    document.getElementById("app").style.display = "none";
+    document.getElementById("auth-screen").style.display = "flex";
+    document.getElementById("step-password").classList.add("hidden");
+    document.getElementById("step-user").classList.remove("hidden");
+    document.getElementById("passcode-input").value = "";
+  };
+
+  // ── APP ──
+  function showApp() {
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    document.getElementById("header-username").textContent = authedUser;
+
+    const now = new Date();
+    document.getElementById("today-date-label").textContent =
+      now.toLocaleDateString("en-NZ", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+    loadData();
+    syncInterval = setInterval(loadData, 30000);
+  }
+
+  window.loadData = async function() {
+    try {
+      const today = getTodayKey();
+      todayEntry = await dbGet("meds/" + today);
+      renderToday();
+
+      // Load calendar month
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+      const data = {};
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = calYear + "-" + String(calMonth + 1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+        const entry = await dbGet("meds/" + dateStr);
+        if (entry) data[dateStr] = entry;
+      }
+      calendarData = data;
+      renderCalendar();
+
+      const now = new Date();
+      document.getElementById("sync-label").textContent =
+        "Synced " + formatTime(now.toISOString());
+    } catch(e) {
+      console.error(e);
+      document.getElementById("sync-label").textContent = "Sync failed";
+    }
+  };
+
+  function renderToday() {
+    const card = document.getElementById("status-card");
+    const icon = document.getElementById("status-icon");
+    const title = document.getElementById("status-title");
+    const sub = document.getElementById("status-sub");
+    const btnGive = document.getElementById("btn-give");
+    const btnUndo = document.getElementById("btn-undo");
+    const photo = document.getElementById("jiji-photo");
+
+    if (todayEntry && todayEntry.given) {
+      card.classList.add("given");
+      icon.classList.add("given");
+      icon.textContent = "✓";
+      title.classList.add("given");
+      title.textContent = "Medication given";
+      sub.innerHTML = 'Given by <strong>' + todayEntry.givenBy + '</strong> at ' + formatTime(todayEntry.givenAt);
+      btnGive.classList.add("hidden");
+      btnUndo.classList.remove("hidden");
+      if (!photo.src || photo.classList.contains("hidden")) {
+        photo.src = getRandomPhoto();
+        photo.classList.remove("hidden");
+      }
+    } else {
+      card.classList.remove("given");
+      icon.classList.remove("given");
+      icon.textContent = "💊";
+      title.classList.remove("given");
+      title.textContent = "Not yet today";
+      sub.textContent = "Jiji hasn't had her medication today";
+      btnGive.classList.remove("hidden");
+      btnUndo.classList.add("hidden");
+      photo.classList.add("hidden");
+      photo.src = "";
+    }
+  }
+
+  window.giveMed = async function() {
+    const btnGive = document.getElementById("btn-give");
+    btnGive.disabled = true;
+    btnGive.textContent = "Saving…";
+    const today = getTodayKey();
+    const entry = { given: true, givenBy: authedUser, givenAt: new Date().toISOString() };
+    await dbSet("meds/" + today, entry);
+    todayEntry = entry;
+    calendarData[today] = entry;
+    renderToday();
+    renderCalendar();
+    btnGive.disabled = false;
+    btnGive.textContent = "Mark as given";
+  };
+
+  window.undoMed = async function() {
+    const btn = document.getElementById("btn-undo");
+    if (!undoConfirming) {
+      undoConfirming = true;
+      btn.textContent = "Tap again to confirm undo";
+      btn.classList.add("confirming");
+      undoTimer = setTimeout(() => {
+        undoConfirming = false;
+        btn.textContent = "Undo";
+        btn.classList.remove("confirming");
+      }, 4000);
+      return;
+    }
+    clearTimeout(undoTimer);
+    undoConfirming = false;
+    btn.textContent = "Undo";
+    btn.classList.remove("confirming");
+    const today = getTodayKey();
+    await dbRemove("meds/" + today);
+    todayEntry = null;
+    delete calendarData[today];
+    renderToday();
+    renderCalendar();
+  };
+
+  // ── TABS ──
+  window.switchTab = function(tab) {
+    document.getElementById("view-today").classList.toggle("hidden", tab !== "today");
+    document.getElementById("view-calendar").classList.toggle("hidden", tab !== "calendar");
+    document.getElementById("tab-today").classList.toggle("active", tab === "today");
+    document.getElementById("tab-calendar").classList.toggle("active", tab === "calendar");
+  };
+
+  // ── CALENDAR ──
+  window.changeMonth = function(dir) {
+    calMonth += dir;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    loadData();
+  };
+
+  function renderCalendar() {
+    document.getElementById("cal-month-title").textContent = MONTH_NAMES[calMonth] + " " + calYear;
+    const grid = document.getElementById("cal-grid");
+    grid.innerHTML = "";
+
+    const now = new Date();
+    const todayStr = getTodayKey();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+
+    for (let i = 0; i < firstDay; i++) {
+      const empty = document.createElement("div");
+      grid.appendChild(empty);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = calYear + "-" + String(calMonth + 1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+      const entry = calendarData[dateStr];
+      const isToday = dateStr === todayStr;
+      const isPast = dateStr < todayStr;
+      const isFuture = dateStr > todayStr;
+
+      const cell = document.createElement("button");
+      cell.className = "cal-cell";
+
+      if (entry && entry.given) cell.classList.add("given");
+      else if (entry && entry.missed) cell.classList.add("missed");
+      else if (isPast) cell.classList.add("no-record");
+      else if (isFuture) cell.classList.add("future");
+
+      if (isToday) cell.classList.add("today");
+      if (!isFuture) {
+        cell.classList.add("clickable");
+        cell.onclick = () => openModal(dateStr);
+      }
+
+      const num = document.createElement("span");
+      num.className = "cal-num";
+      num.textContent = d;
+      cell.appendChild(num);
+
+      if (entry && entry.given) {
+        const tick = document.createElement("span");
+        tick.className = "cal-tick";
+        tick.textContent = "✓";
+        cell.appendChild(tick);
+      } else if (entry && entry.missed) {
+        const cross = document.createElement("span");
+        cross.className = "cal-cross";
+        cross.textContent = "✗";
+        cell.appendChild(cross);
+      }
+
+      grid.appendChild(cell);
+    }
+  }
+
+  // ── MODAL ──
+  window.openModal = function(dateStr) {
+    editingDate = dateStr;
+    const entry = calendarData[dateStr];
+    const displayDate = new Date(dateStr + "T12:00:00").toLocaleDateString("en-NZ", {
+      weekday: "long", day: "numeric", month: "long"
+    });
+
+    document.getElementById("modal-date-label").textContent = displayDate;
+    document.getElementById("modal-last-updated").textContent =
+      entry && entry.givenBy
+        ? "Last updated by " + entry.givenBy + (entry.givenAt ? " at " + formatTime(entry.givenAt) : "")
+        : "";
+
+    const currentStatus = entry ? (entry.given ? "given" : entry.missed ? "missed" : "none") : "none";
+    const optGiven = document.getElementById("opt-given");
+    const optMissed = document.getElementById("opt-missed");
+    const optNone = document.getElementById("opt-none");
+
+    optGiven.className = "status-option" + (currentStatus === "given" ? " opt-given" : "");
+    optGiven.innerHTML = "✓&nbsp;&nbsp;Given" + (currentStatus === "given" ? '<span class="current-tag">current</span>' : "");
+    optMissed.className = "status-option" + (currentStatus === "missed" ? " opt-missed" : "");
+    optMissed.innerHTML = "✗&nbsp;&nbsp;Missed" + (currentStatus === "missed" ? '<span class="current-tag">current</span>' : "");
+    optNone.className = "status-option" + (currentStatus === "none" ? " opt-none" : "");
+    optNone.innerHTML = "—&nbsp;&nbsp;No record" + (currentStatus === "none" ? '<span class="current-tag">current</span>' : "");
+
+    document.getElementById("modal-step-status").classList.remove("hidden");
+    document.getElementById("modal-step-code").classList.add("hidden");
+    document.getElementById("modal").classList.remove("hidden");
+  };
+
+  window.closeModal = function() {
+    document.getElementById("modal").classList.add("hidden");
+    editingDate = null;
+    pendingStatus = null;
+  };
+
+  window.selectStatus = function(status) {
+    pendingStatus = status;
+    const displayDate = new Date(editingDate + "T12:00:00").toLocaleDateString("en-NZ", {
+      weekday: "long", day: "numeric", month: "long"
+    });
+    document.getElementById("modal-confirm-date").textContent = displayDate;
+    const statusLabels = { given: "given", missed: "missed", none: "no record" };
+    const statusColors = { given: "#2D7A45", missed: "#C0392B", none: "#555" };
+    const s = document.getElementById("modal-confirm-status");
+    s.textContent = statusLabels[status];
+    s.style.color = statusColors[status];
+
+    document.getElementById("modal-step-status").classList.add("hidden");
+    document.getElementById("modal-step-code").classList.remove("hidden");
+    document.getElementById("modal-code-input").value = "";
+    setTimeout(() => document.getElementById("modal-code-input").focus(), 100);
+  };
+
+  window.backToStatus = function() {
+    document.getElementById("modal-step-code").classList.add("hidden");
+    document.getElementById("modal-step-status").classList.remove("hidden");
+  };
+
+  window.submitModalCode = async function() {
+    const val = document.getElementById("modal-code-input").value;
+    if (val === PASSWORD) {
+      await saveDayEdit(editingDate, pendingStatus);
+      closeModal();
+    } else {
+      const inp = document.getElementById("modal-code-input");
+      inp.classList.add("error", "shake");
+      document.getElementById("modal-code-error").classList.remove("hidden");
+      inp.value = "";
+      setTimeout(() => inp.classList.remove("shake"), 400);
+      setTimeout(() => {
+        inp.classList.remove("error");
+        document.getElementById("modal-code-error").classList.add("hidden");
+      }, 2000);
+    }
+  };
+
+  async function saveDayEdit(dateStr, status) {
+    if (status === "none") {
+      await dbRemove("meds/" + dateStr);
+      delete calendarData[dateStr];
+      if (dateStr === getTodayKey()) { todayEntry = null; renderToday(); }
+    } else {
+      const entry = { given: status === "given", missed: status === "missed", givenBy: authedUser, givenAt: new Date().toISOString() };
+      await dbSet("meds/" + dateStr, entry);
+      calendarData[dateStr] = entry;
+      if (dateStr === getTodayKey()) { todayEntry = entry; renderToday(); }
+    }
+    renderCalendar();
+  }
+
+  // ── INIT ──
+  if (authedUser && USERS.includes(authedUser)) {
+    document.getElementById("auth-screen").style.display = "none";
+    showApp();
+  }
+
+  window.addEventListener("firebase-ready", () => {
+    if (authedUser && USERS.includes(authedUser)) loadData();
+  });
+</script>
+</body>
+</html>
